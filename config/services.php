@@ -45,7 +45,7 @@ return [
         'base_url' => env('AI_BASE_URL', 'https://api.fastrouter.ai/api/v1'),
         'model' => env('AI_MODEL', 'openai/gpt-4o-mini'),
         'gemini_key' => env('GEMINI_API_KEY'),
-        'gemini_model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
+        'gemini_model' => env('GEMINI_MODEL', 'gemini-flash-lite-latest'),
     ],
 
 ];

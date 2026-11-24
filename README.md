@@ -35,7 +35,7 @@ Open http://localhost:8000, create a project, review the facts board, generate, 
 | --- | --- |
 | `DB_*` | MySQL connection (all state is stored in MySQL) |
 | `EXA_API_KEY` | Web search. Optional — without it the search step is skipped with a visible note |
-| `AI_PROVIDER` | `openai-compatible` (default) or `gemini` |
+| `AI_PROVIDER` | `gemini` (used here) or `openai-compatible` — the other configured provider is tried automatically as a backup |
 | `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL` | OpenAI-compatible provider settings |
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | Gemini settings (free-tier key works) |
 

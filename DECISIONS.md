@@ -40,3 +40,8 @@ The finished build was reviewed independently by Codex and Kiro CLI against the 
 - Price extraction requires a currency marker outside actual price-list files, so "Room capacity, 250" is not a price.
 
 Storage note: all state — projects, sources including full extracted text, facts, sections — is in MySQL. Uploaded file binaries live on disk with their paths in MySQL, which is the standard Laravel arrangement; a database-only backup would keep every fact and the full site content, losing only the original binary uploads.
+
+## AI provider (updated 24 Nov, after the demo recording)
+
+- Primary provider is now **Gemini** (`gemini-flash-lite-latest`) — the brief names Gemini, and a Google AI Studio key was already available. The named models (`gemini-2.5-flash`, `gemini-2.0-flash`) return 404 "no longer available to new users" on these keys; the `*-latest` aliases are what new-user keys can call, and the flash (non-lite) alias was returning 503s, so the lite alias is configured. Model is one env var (`GEMINI_MODEL`) when that changes.
+- `AiClientFactory` now returns a composite client: configured provider first, the other provider as automatic backup, and only if both fail does the facts-only fallback engage. One dead key can no longer take generation down. The demo video was recorded before this change, on the OpenAI-compatible provider; the app behaviour shown is identical.

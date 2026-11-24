@@ -6,9 +6,15 @@ class AiClientFactory
 {
     public static function make(): AiClient
     {
-        return match (config('services.ai.provider')) {
-            'gemini' => new GeminiDriver(),
-            default => new OpenAiCompatibleDriver(),
-        };
+        // The configured provider goes first; the other configured provider
+        // is the backup, so one dead key never takes generation down.
+        $gemini = new GeminiDriver();
+        $openAi = new OpenAiCompatibleDriver();
+
+        return new CompositeAiClient(
+            config('services.ai.provider') === 'gemini'
+                ? [$gemini, $openAi]
+                : [$openAi, $gemini]
+        );
     }
 }
