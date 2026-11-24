@@ -28,7 +28,7 @@
 
 ## Validation round (three independent reviewers)
 
-The finished build was reviewed independently by Codex, Kiro CLI and Mistral Vibe against the brief, and the verified findings were fixed:
+The finished build was reviewed independently by Codex and Kiro CLI against the brief, and the verified findings were fixed. (Mistral Vibe was attempted three times as a third reviewer; its headless runs timed out before producing findings, so no Mistral findings are claimed.)
 
 - Conflict resolution now validates that the chosen fact belongs to the field, records the exact value set the user saw, and **re-opens if a later source adds a new value**; resolving also clears generated sections so a stale value can never be published.
 - Phone comparison is digit-normalised (+91 / trunk 0 stripped), so the same number written two ways is not a false conflict; multiple opening-hours lines are treated as one fact, not a conflict.
