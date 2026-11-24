@@ -1,5 +1,7 @@
 # AI Builds My Website
 
+**Demo video (5 min, two real businesses):** https://youtu.be/A9-MFBamu58
+
 Give the app whatever you have about a business — its name and city, a website or Google Business link, social media links, a brochure PDF, a price list, photos — and it builds a real, publishable website **only from facts it can show you**.
 
 **Golden rule: never invent facts. If unsure, ask the user.** That rule is enforced in code, not just in a prompt:

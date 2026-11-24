@@ -16,4 +16,4 @@
 - [x] T3.1 Feature tests for extraction, conflicts, injection exclusion, publish gating, fallback. Done = `php artisan test` green.
 - [x] T3.2 Two real-business demo projects built end to end locally (Candies Cafe + Kromakay Salon, both published in the local app); adversarial QA pass + three-CLI validation (Codex, Kiro completed; Mistral attempted) DONE 24 Nov — findings fixed, see DECISIONS.md.
 - [ ] T3.3 README (setup, env, architecture), `.env.example`, DECISIONS.md; GitHub repo public with description + topics.
-- [ ] T3.4 5-minute demo video (2 real businesses) via the recording pipeline; submission email to hr@websites.co.in with repo + video links + Pintu's stipend and joining date.
+- [ ] T3.4 Demo video DONE 24 Nov (https://youtu.be/A9-MFBamu58, public); submission email to hr@websites.co.in with repo + video links + Pintu's stipend and joining date — pending his two details.
