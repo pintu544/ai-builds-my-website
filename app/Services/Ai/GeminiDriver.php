@@ -23,7 +23,7 @@ class GeminiDriver implements AiClient
                 ]
             );
         } catch (\Throwable $e) {
-            throw new AiUnavailableException('Gemini request failed: ' . $e->getMessage());
+            throw new AiUnavailableException('Gemini request failed (network error).');
         }
         if (! $response->successful()) {
             throw new AiUnavailableException('Gemini returned HTTP ' . $response->status() . '.');
@@ -32,6 +32,22 @@ class GeminiDriver implements AiClient
         if (! is_string($text) || trim($text) === '') {
             throw new AiUnavailableException('Gemini returned an empty response.');
         }
-        return SectionPrompt::parse($text);
+        try {
+            return SectionPrompt::parse($text);
+        } catch (AiUnavailableException $e) {
+            $retry = Http::timeout(60)->post(
+                'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent?key=' . $key,
+                [
+                    'systemInstruction' => ['parts' => [['text' => SectionPrompt::system()]]],
+                    'contents' => [['parts' => [['text' => SectionPrompt::user($facts, $onlyKind) . "\nYour previous reply was not valid JSON. Reply with ONLY the JSON object, no other text."]]]],
+                    'generationConfig' => ['responseMimeType' => 'application/json', 'temperature' => 0.2],
+                ]
+            );
+            $text2 = $retry->successful() ? $retry->json('candidates.0.content.parts.0.text') : null;
+            if (! is_string($text2) || trim($text2) === '') {
+                throw $e;
+            }
+            return SectionPrompt::parse($text2);
+        }
     }
 }

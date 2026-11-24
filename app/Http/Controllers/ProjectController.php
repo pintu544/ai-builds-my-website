@@ -70,7 +70,15 @@ class ProjectController extends Controller
             $this->ingestion->addPhoto($project, $photo);
         }
 
-        return redirect()->route('projects.show', $project)->with('ok', 'Project created. Review the facts board — nothing is published until you confirm the facts.');
+        $searchNote = '';
+        if (config('services.exa.key')) {
+            $result = $this->ingestion->searchWeb($project);
+            $searchNote = $result['ok']
+                ? ' Web search results were added as candidate sources — their facts join the site only after you confirm them.'
+                : ' ' . $result['note'];
+        }
+
+        return redirect()->route('projects.show', $project)->with('ok', 'Project created. Review the facts board — nothing is published until you confirm the facts.' . $searchNote);
     }
 
     public function show(Project $project)
@@ -119,11 +127,29 @@ class ProjectController extends Controller
     public function resolve(Request $request, Project $project)
     {
         $data = $request->validate(['field' => 'required|string', 'fact_id' => 'required|integer']);
-        $fact = $project->facts()->findOrFail($data['fact_id']);
+        $fact = $project->facts()
+            ->where('field', $data['field'])
+            ->where('flagged_injection', false)
+            ->findOrFail($data['fact_id']);
         $resolution = $project->resolution ?? [];
-        $resolution[$data['field']] = $fact->id;
+        $resolution[$data['field']] = ['fact' => $fact->id, 'seen' => $project->normalisedValues($data['field'])];
+        $hadSections = $project->sections()->exists();
         $project->update(['resolution' => $resolution]);
-        return back()->with('ok', 'Conflict resolved: ' . $data['field'] . ' = ' . $fact->value);
+        if ($hadSections) {
+            // Sections may contain the losing value — never serve stale facts.
+            $project->sections()->delete();
+            $project->update(['status' => 'draft', 'published_at' => null]);
+        }
+        return back()->with('ok', 'Conflict resolved: ' . $data['field'] . ' = ' . $fact->value
+            . ($hadSections ? ' The generated site used the old value, so it was cleared — generate again to rebuild from the resolved facts.' : ''));
+    }
+
+    public function deleteSource(Project $project, \App\Models\Source $source)
+    {
+        abort_unless($source->project_id === $project->id, 404);
+        $source->facts()->delete();
+        $source->delete();
+        return back()->with('ok', 'Source removed, along with the facts that came only from it.');
     }
 
     public function addFact(Request $request, Project $project)
@@ -142,7 +168,7 @@ class ProjectController extends Controller
 
     private function uniqueSlug(string $name, string $city): string
     {
-        $base = Str::slug($name . '-' . $city) ?: 'business';
+        $base = Str::limit(Str::slug($name . '-' . $city) ?: 'business', 180, '');
         $slug = $base;
         $i = 2;
         while (Project::where('slug', $slug)->exists()) {

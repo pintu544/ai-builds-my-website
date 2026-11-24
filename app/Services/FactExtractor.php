@@ -58,15 +58,31 @@ class FactExtractor
             }
         }
 
-        // Price rows: "Item .... ₹250" or "Item - Rs. 250" or CSV "Item,250".
+        // Price rows: a line counts as a price only when it carries a currency
+        // marker (₹ / Rs. / INR). Bare "Item, 250" CSV rows count only in an
+        // actual price-list file — elsewhere "Room capacity, 250" is not a price.
         foreach (preg_split('/\R/', $clean) as $line) {
             $line = trim($line);
             if (preg_match('/^(.{2,60}?)[\s,.\-–—:]*\s*(?:₹|rs\.?|inr)\s*([\d,]+(?:\.\d{1,2})?)\s*$/i', $line, $mm)
-                || preg_match('/^(.{2,60}?),\s*([\d,]+(?:\.\d{1,2})?)\s*$/', $line, $mm)) {
+                || ($source->type === 'pricelist' && preg_match('/^(.{2,60}?),\s*([\d,]+(?:\.\d{1,2})?)\s*$/', $line, $mm))) {
                 $item = trim($mm[1], " \t,-–—:");
                 if ($item !== '' && ! preg_match('/total|subtotal|tax|gst/i', $item)) {
                     $facts[] = ['field' => 'price', 'value' => $item . ' — ₹' . $mm[2], 'snippet' => $line, 'flagged_injection' => false];
                 }
+            }
+        }
+
+        // Address: a line carrying an Indian PIN code, or a road/street marker.
+        foreach (preg_split('/\R/', $clean) as $line) {
+            $line = trim($line);
+            $hasPin = (bool) preg_match('/\b\d{6}\b/', $line);
+            $hasRoadWord = (bool) preg_match('/\b(road|street|nagar|marg|lane|sector|block|floor|near|opp\.?|opposite)\b/i', $line);
+            $startsWithNumber = (bool) preg_match('/^\d/', $line);
+            $mentionsCity = $source->project && mb_stripos($line, $source->project->city) !== false;
+            if (mb_strlen($line) >= 12 && mb_strlen($line) <= 160
+                && ($hasPin || ($hasRoadWord && ($startsWithNumber || $mentionsCity)))) {
+                $facts[] = ['field' => 'address', 'value' => $line, 'snippet' => $line, 'flagged_injection' => false];
+                break;
             }
         }
 

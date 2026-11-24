@@ -24,6 +24,34 @@ class SectionPrompt
         return $ask . "\nCONFIRMED FACTS:\n" . json_encode($facts, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
+    /**
+     * Enforce the content shape the views expect: scalar fields must be
+     * strings, items must be a list of strings. Returns null when a section
+     * is too malformed to render safely.
+     */
+    private static function sanitise(string $kind, array $content): ?array
+    {
+        $scalars = ['hero' => ['heading', 'subheading'], 'about' => ['heading', 'body'],
+            'services' => ['heading'], 'prices' => ['heading'], 'gallery' => ['heading'],
+            'contact' => ['heading', 'body'], 'footer' => ['text']][$kind] ?? [];
+        $out = [];
+        foreach ($scalars as $field) {
+            if (isset($content[$field])) {
+                if (! is_string($content[$field])) {
+                    return null;
+                }
+                $out[$field] = $content[$field];
+            }
+        }
+        if (in_array($kind, ['services', 'prices'], true) && isset($content['items'])) {
+            if (! is_array($content['items'])) {
+                return null;
+            }
+            $out['items'] = array_values(array_filter($content['items'], 'is_string'));
+        }
+        return $out;
+    }
+
     /** Parse + validate a model response into section rows. Throws on bad shape. */
     public static function parse(string $raw): array
     {
@@ -41,9 +69,13 @@ class SectionPrompt
             if (! isset($s['kind']) || ! in_array($s['kind'], self::KINDS, true) || ! isset($s['content']) || ! is_array($s['content'])) {
                 continue;
             }
+            $content = self::sanitise($s['kind'], $s['content']);
+            if ($content === null) {
+                continue;
+            }
             $sections[] = [
                 'kind' => $s['kind'],
-                'content' => $s['content'],
+                'content' => $content,
                 'fact_keys' => array_values(array_filter((array) ($s['fact_keys'] ?? []), 'is_string')),
             ];
         }

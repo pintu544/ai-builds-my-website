@@ -30,6 +30,10 @@ class IngestionService
 
     public function fetchLink(Source $source): void
     {
+        if ($this->isPrivateUrl($source->url)) {
+            $source->update(['status' => 'failed', 'note' => 'That URL points at a private or local address, so it was not fetched. Paste the content manually instead.']);
+            return;
+        }
         try {
             $response = Http::withHeaders([
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
@@ -70,10 +74,29 @@ class IngestionService
         if ($social && mb_strlen($text) < 1200) {
             return true;
         }
-        $needles = ['log in to continue', 'sign in to continue', 'you must log in', 'please log in to see', 'verify you are human', 'are you a robot'];
-        $lower = mb_strtolower($text);
+        $needles = ['log in to continue', 'sign in to continue', 'you must log in', 'please log in to see', 'verify you are human', 'are you a robot', 'before you continue to google', 'enable javascript', 'you need to enable javascript', 'this page requires javascript', 'consent.google'];
+        $head = mb_strtolower(mb_substr($text, 0, 1500));
         foreach ($needles as $n) {
-            if (str_contains($lower, $n) && mb_strlen($text) < 3000) {
+            if (str_contains($head, $n)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Block SSRF: never fetch loopback / private / reserved addresses. */
+    private function isPrivateUrl(string $url): bool
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+        if (! $host) {
+            return true;
+        }
+        $ips = filter_var($host, FILTER_VALIDATE_IP) ? [$host] : (gethostbynamel($host) ?: []);
+        if (! $ips) {
+            return true; // unresolvable hosts cannot be fetched safely
+        }
+        foreach ($ips as $ip) {
+            if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
                 return true;
             }
         }

@@ -14,6 +14,7 @@ Route::post('/projects/{project}/sources/manual', [ProjectController::class, 'ad
 Route::post('/projects/{project}/facts/{fact}/confirm', [ProjectController::class, 'confirmFact'])->name('projects.facts.confirm');
 Route::post('/projects/{project}/facts', [ProjectController::class, 'addFact'])->name('projects.facts.add');
 Route::post('/projects/{project}/resolve', [ProjectController::class, 'resolve'])->name('projects.resolve');
+Route::delete('/projects/{project}/sources/{source}', [ProjectController::class, 'deleteSource'])->name('projects.sources.delete');
 
 Route::post('/projects/{project}/generate', [SiteController::class, 'generate'])->name('projects.generate');
 Route::post('/projects/{project}/publish', [SiteController::class, 'publish'])->name('projects.publish');

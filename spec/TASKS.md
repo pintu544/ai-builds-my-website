@@ -14,6 +14,6 @@
 
 ## Slice 3 — Proof and submission
 - [x] T3.1 Feature tests for extraction, conflicts, injection exclusion, publish gating, fallback. Done = `php artisan test` green.
-- [ ] T3.2 Two real-business demo projects built end to end locally; adversarial QA pass (fresh reviewer) + three-CLI validation (Codex, Kiro, Mistral) with findings fixed.
+- [ ] T3.2 Two real-business demo projects built end to end locally (demo step, pending); adversarial QA pass + three-CLI validation (Codex, Kiro, Mistral) DONE 24 Nov — findings fixed, see DECISIONS.md.
 - [ ] T3.3 README (setup, env, architecture), `.env.example`, DECISIONS.md; GitHub repo public with description + topics.
 - [ ] T3.4 5-minute demo video (2 real businesses) via the recording pipeline; submission email to hr@websites.co.in with repo + video links + Pintu's stipend and joining date.

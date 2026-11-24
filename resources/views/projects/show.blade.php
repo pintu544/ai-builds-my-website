@@ -53,13 +53,19 @@
           <span class="font-medium">{{ $source->label() }}</span>
           <span class="text-xs px-2 py-0.5 rounded {{ $source->status === 'ok' ? 'bg-emerald-100 text-emerald-800' : ($source->status === 'blocked' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-600') }}">{{ $source->status }}</span>
           <span class="text-slate-400 truncate">{{ $source->url }}</span>
+          <form method="POST" action="{{ route('projects.sources.delete', [$project, $source]) }}" class="ml-auto" onsubmit="return confirm('Remove this source and its facts?')">@csrf @method('DELETE')
+            <button class="text-xs text-red-500 hover:underline">Remove</button>
+          </form>
         </div>
         @if($source->note)<p class="text-sm text-slate-500 mt-1">{{ $source->note }}</p>@endif
         @if($source->raw_text)
           <details class="mt-1"><summary class="text-xs text-slate-400 cursor-pointer">What was read ({{ $source->facts->count() }} facts extracted)</summary>
           <pre class="text-xs bg-slate-50 border border-slate-100 rounded p-2 mt-1 whitespace-pre-wrap max-h-48 overflow-auto">{{ \Illuminate\Support\Str::limit($source->raw_text, 3000) }}</pre></details>
         @endif
-        @if(in_array($source->status, ['blocked', 'failed']))
+        @php $replaced = $project->sources->where('type', 'manual')->contains(fn ($m) => str_contains($m->note ?? '', 'replace blocked source #' . $source->id)); @endphp
+        @if($replaced)
+          <p class="text-xs text-emerald-700 mt-1">Replaced by pasted content below.</p>
+        @elseif(in_array($source->status, ['blocked', 'failed']))
           <form method="POST" action="{{ route('projects.manual', $project) }}" class="mt-2">@csrf
             <input type="hidden" name="replaces" value="{{ $source->id }}">
             <textarea name="text" required rows="3" class="w-full border border-slate-300 rounded px-2 py-1.5 text-sm" placeholder="Paste the page / profile content here instead…"></textarea>
@@ -86,7 +92,7 @@
 
   <section class="bg-white border border-slate-200 rounded p-5">
     <h2 class="font-semibold mb-3">Facts board</h2>
-    <p class="text-sm text-slate-500 mb-3">Every value the website may use, with the source it came from. Only confirmed facts go into the site.</p>
+    <p class="text-sm text-slate-500 mb-3">Every value the website may use, with the source it came from. Facts from your own links, files and pastes are used as they are — unless sources disagree, in which case you pick the winner above. Facts from web search are used only after you confirm them, because a search result might be a different business with the same name.</p>
     @php $flagged = $project->facts->where('flagged_injection', true); $normal = $project->facts->where('flagged_injection', false)->groupBy('field'); @endphp
     @foreach($normal as $field => $facts)
       <div class="mb-4">
@@ -135,7 +141,7 @@
       <div>
         <div class="text-sm font-medium capitalize">{{ $section->kind }}</div>
         <div class="text-sm text-slate-600">{{ $section->content['heading'] ?? $section->content['title'] ?? '' }}</div>
-        <div class="text-xs text-slate-400">Built from facts: {{ implode(', ', $section->fact_keys ?? []) ?: 'none' }}</div>
+        <div class="text-xs text-slate-400">@if(!empty($section->content['_edited'])) Edited by you @else Built from facts: {{ implode(', ', $section->fact_keys ?? []) ?: 'none' }} @endif</div>
       </div>
       <div class="flex gap-2 shrink-0">
         <a href="{{ route('projects.sections.edit', [$project, $section]) }}" class="text-xs border border-slate-300 rounded px-2 py-1">Edit</a>

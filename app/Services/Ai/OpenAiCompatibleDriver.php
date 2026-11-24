@@ -23,7 +23,7 @@ class OpenAiCompatibleDriver implements AiClient
                 'temperature' => 0.4,
             ]);
         } catch (\Throwable $e) {
-            throw new AiUnavailableException('AI request failed: ' . $e->getMessage());
+            throw new AiUnavailableException('AI request failed (network error).');
         }
         if (! $response->successful()) {
             throw new AiUnavailableException('AI provider returned HTTP ' . $response->status() . '.');
@@ -32,6 +32,23 @@ class OpenAiCompatibleDriver implements AiClient
         if (! is_string($text) || trim($text) === '') {
             throw new AiUnavailableException('AI returned an empty response.');
         }
-        return SectionPrompt::parse($text);
+        try {
+            return SectionPrompt::parse($text);
+        } catch (AiUnavailableException $e) {
+            // One repair retry: ask once more, JSON only.
+            $retry = Http::withToken($key)->timeout(60)->post($base . '/chat/completions', [
+                'model' => config('services.ai.model'),
+                'messages' => [
+                    ['role' => 'system', 'content' => SectionPrompt::system()],
+                    ['role' => 'user', 'content' => SectionPrompt::user($facts, $onlyKind) . "\nYour previous reply was not valid JSON. Reply with ONLY the JSON object, no other text."],
+                ],
+                'temperature' => 0.2,
+            ]);
+            $text2 = $retry->successful() ? $retry->json('choices.0.message.content') : null;
+            if (! is_string($text2) || trim($text2) === '') {
+                throw $e;
+            }
+            return SectionPrompt::parse($text2);
+        }
     }
 }
